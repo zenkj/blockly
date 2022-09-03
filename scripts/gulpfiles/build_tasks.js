@@ -130,7 +130,12 @@ const chunks = [
     name: 'dart',
     entry: 'generators/dart/all.js',
     reexport: 'Blockly.Dart',
-  }
+  },
+  {
+    name: 'cpp',
+    entry: 'generators/cpp/all.js',
+    reexport: 'Blockly.CPP',
+  }	
 ];
 
 const licenseRegex = `\\/\\*\\*
