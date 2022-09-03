@@ -35,45 +35,43 @@ const CPP = new Generator('CPP');
  * accidentally clobbering a built-in object or function.
  */
 CPP.addReservedWords(
-    // https://www.dartlang.org/docs/spec/latest/dart-language-specification.pdf
-    // Section 16.1.1
-    'assert,break,case,catch,class,const,continue,default,do,else,enum,' +
-    'extends,false,final,finally,for,if,in,is,new,null,rethrow,return,super,' +
-    'switch,this,throw,true,try,var,void,while,with,' +
-    // https://api.dartlang.org/dart_core.html
-    'print,identityHashCode,identical,BidirectionalIterator,Comparable,' +
-    'double,Function,int,Invocation,Iterable,Iterator,List,Map,Match,num,' +
-    'Pattern,RegExp,Set,StackTrace,String,StringSink,Type,bool,DateTime,' +
-    'Deprecated,Duration,Expando,Null,Object,RuneIterator,Runes,Stopwatch,' +
-    'StringBuffer,Symbol,Uri,Comparator,AbstractClassInstantiationError,' +
-    'ArgumentError,AssertionError,CastError,ConcurrentModificationError,' +
-    'CyclicInitializationError,Error,Exception,FallThroughError,' +
-    'FormatException,IntegerDivisionByZeroException,NoSuchMethodError,' +
-    'NullThrownError,OutOfMemoryError,RangeError,StackOverflowError,' +
-    'StateError,TypeError,UnimplementedError,UnsupportedError'
+    // https://en.cppreference.com/w/cpp/keyword
+    'alignas,alignof,and,and_eq,asm,atomic_cancel,atomic_commit,atomic_noexcept,' +
+    'aotu,bitand,bitor,bool,break,case,catch,char,char8_t,char16_t,char32_t,' +
+    'class,compl,concept,const,consteval,constexpr,constinit,const_cast,continue,' +
+    'co_await,co_return,co_yield,decltype,default,delete,do,double,dynamic_cast,' +
+    'else,enum,explicit,export,extern,false,float,for,friend,goto,if,inline,int,' +
+    'long,mutable,namespace,new,noexcept,not,not_eq,nullptr,operator,or,or_eq,' +
+    'private,protected,public,reflexpr,register,reinterpret_cast,requires,return,' +
+    'short,signed,sizeof,static,static_assert,static_cast,struct,switch,synchronized,' +
+    'template,this,thread_local,throw,true,try,typedef,typeid,typename,union,' +
+    'unsigned,using,virtual,void,volatile,wchar_t,while,xor,xor_eq,' +
+    // standard library
+    'cin,cout,printf,malloc,free,string,std'
 );
 
 /**
  * Order of operation ENUMs.
- * https://dart.dev/guides/language/language-tour#operators
+ * https://en.cppreference.com/w/cpp/language/operator_precedence
  */
 CPP.ORDER_ATOMIC = 0;         // 0 "" ...
-CPP.ORDER_UNARY_POSTFIX = 1;  // expr++ expr-- () [] . ?.
-CPP.ORDER_UNARY_PREFIX = 2;   // -expr !expr ~expr ++expr --expr
-CPP.ORDER_MULTIPLICATIVE = 3; // * / % ~/
-CPP.ORDER_ADDITIVE = 4;       // + -
-CPP.ORDER_SHIFT = 5;          // << >>
-CPP.ORDER_BITWISE_AND = 6;    // &
-CPP.ORDER_BITWISE_XOR = 7;    // ^
-CPP.ORDER_BITWISE_OR = 8;     // |
-CPP.ORDER_RELATIONAL = 9;     // >= > <= < as is is!
-CPP.ORDER_EQUALITY = 10;      // == !=
-CPP.ORDER_LOGICAL_AND = 11;   // &&
-CPP.ORDER_LOGICAL_OR = 12;    // ||
-CPP.ORDER_IF_NULL = 13;       // ??
+CPP.ORDER_SCOPE = 0.1;        // ::
+CPP.ORDER_UNARY_POSTFIX = 1;  // expr++ expr-- foo() a[] . -> 
+CPP.ORDER_UNARY_PREFIX = 2;   // +expr -expr !expr ~expr ++expr --expr *a &v new delete
+CPP.ORDER_PTR_TO_MEM = 3;     // .* ->*
+CPP.ORDER_MULTIPLICATIVE = 4; // * / % 
+CPP.ORDER_ADDITIVE = 5;       // + -
+CPP.ORDER_SHIFT = 6;          // << >>
+CPP.ORDER_RELATIONAL = 7;     // >= > <= <
+CPP.ORDER_EQUALITY = 8;       // == !=
+CPP.ORDER_BITWISE_AND = 9;    // &
+CPP.ORDER_BITWISE_XOR = 10;   // ^
+CPP.ORDER_BITWISE_OR = 11;    // |
+CPP.ORDER_LOGICAL_AND = 12;   // &&
+CPP.ORDER_LOGICAL_OR = 13;    // ||
 CPP.ORDER_CONDITIONAL = 14;   // expr ? expr : expr
-CPP.ORDER_CASCADE = 15;       // ..
-CPP.ORDER_ASSIGNMENT = 16;    // = *= /= ~/= %= += -= <<= >>= &= ^= |=
+CPP.ORDER_ASSIGNMENT = 14;    // = *= /= %= += -= <<= >>= &= ^= |=
+CPP.ORDER_COMMA = 15;         // ,
 CPP.ORDER_NONE = 99;          // (...)
 
 /**
@@ -118,7 +116,7 @@ CPP.init = function(workspace) {
   // Declare all of the variables.
   if (defvars.length) {
     this.definitions_['variables'] =
-        'var ' + defvars.join(', ') + ';';
+        'int ' + defvars.join(', ') + ';';
   }
   this.isInitialized = true;
 };
@@ -133,7 +131,7 @@ CPP.finish = function(code) {
   if (code) {
     code = this.prefixLines(code, this.INDENT);
   }
-  code = 'main() {\n' + code + '}';
+  code = 'int main() {\n' + code + this.INDENT + 'return 0;\n}';
 
   // Convert the definitions dictionary into a list.
   const imports = [];
@@ -152,7 +150,7 @@ CPP.finish = function(code) {
 
   this.nameDB_.reset();
   const allDefs = imports.join('\n') + '\n\n' + definitions.join('\n\n');
-  return allDefs.replace(/\n\n+/g, '\n\n').replace(/\n*$/, '\n\n\n') + code;
+  return code;
 };
 
 /**
@@ -176,8 +174,8 @@ CPP.quote_ = function(string) {
   string = string.replace(/\\/g, '\\\\')
                  .replace(/\n/g, '\\\n')
                  .replace(/\$/g, '\\$')
-                 .replace(/'/g, '\\\'');
-  return '\'' + string + '\'';
+                 .replace(/"/g, '\\\"');
+  return '"' + string + '"';
 };
 
 /**
@@ -191,7 +189,7 @@ CPP.multiline_quote_ = function (string) {
   const lines = string.split(/\n/g).map(this.quote_);
   // Join with the following, plus a newline:
   // + '\n' +
-  return lines.join(' + \'\\n\' + \n');
+  return lines.join(' + "\\n" + \n');
 };
 
 /**
