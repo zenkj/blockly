@@ -107,7 +107,7 @@ CPP['logic_boolean'] = function(block) {
 
 CPP['logic_null'] = function(block) {
   // Null data type.
-  return ['null', CPP.ORDER_ATOMIC];
+  return ['NULL', CPP.ORDER_ATOMIC];
 };
 
 CPP['logic_ternary'] = function(block) {
@@ -115,9 +115,9 @@ CPP['logic_ternary'] = function(block) {
   const value_if =
       CPP.valueToCode(block, 'IF', CPP.ORDER_CONDITIONAL) || 'false';
   const value_then =
-      CPP.valueToCode(block, 'THEN', CPP.ORDER_CONDITIONAL) || 'null';
+      CPP.valueToCode(block, 'THEN', CPP.ORDER_CONDITIONAL) || 'NULL';
   const value_else =
-      CPP.valueToCode(block, 'ELSE', CPP.ORDER_CONDITIONAL) || 'null';
+      CPP.valueToCode(block, 'ELSE', CPP.ORDER_CONDITIONAL) || 'NULL';
   const code = value_if + ' ? ' + value_then + ' : ' + value_else;
   return [code, CPP.ORDER_CONDITIONAL];
 };

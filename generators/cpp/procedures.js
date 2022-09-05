@@ -44,7 +44,7 @@ CPP['procedures_defreturn'] = function(block) {
   if (returnValue) {
     returnValue = CPP.INDENT + 'return ' + returnValue + ';\n';
   }
-  const returnType = returnValue ? 'dynamic' : 'void';
+  const returnType = returnValue ? 'int' : 'void';
   const args = [];
   const variables = block.getVars();
   for (let i = 0; i < variables.length; i++) {

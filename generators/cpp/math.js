@@ -22,10 +22,10 @@ CPP['math_number'] = function(block) {
   let code = Number(block.getFieldValue('NUM'));
   let order;
   if (code === Infinity) {
-    code = 'double.infinity';
+    code = 'INFINITY';
     order = CPP.ORDER_UNARY_POSTFIX;
   } else if (code === -Infinity) {
-    code = '-double.infinity';
+    code = '-INFINITY';
     order = CPP.ORDER_UNARY_PREFIX;
   } else {
     // -4.abs() returns -4 in CPP due to strange order of operation choices.
@@ -52,8 +52,8 @@ CPP['math_arithmetic'] = function(block) {
   let code;
   // Power in CPP requires a special case since it has no operator.
   if (!operator) {
-    CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
-    code = 'Math.pow(' + argument0 + ', ' + argument1 + ')';
+    CPP.definitions_['include_cpp_cmath'] = '#include <cmath>';
+    code = 'pow(' + argument0 + ', ' + argument1 + ')';
     return [code, CPP.ORDER_UNARY_POSTFIX];
   }
   code = argument0 + operator + argument1;
@@ -75,10 +75,8 @@ CPP['math_single'] = function(block) {
     code = '-' + arg;
     return [code, CPP.ORDER_UNARY_PREFIX];
   }
-  CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
-  if (operator === 'ABS' || operator.substring(0, 5) === 'ROUND') {
-    arg = CPP.valueToCode(block, 'NUM', CPP.ORDER_UNARY_POSTFIX) || '0';
-  } else if (operator === 'SIN' || operator === 'COS' || operator === 'TAN') {
+  CPP.definitions_['include_cpp_cmath'] = '#include <cmath>';
+  if (operator === 'SIN' || operator === 'COS' || operator === 'TAN') {
     arg = CPP.valueToCode(block, 'NUM', CPP.ORDER_MULTIPLICATIVE) || '0';
   } else {
     arg = CPP.valueToCode(block, 'NUM', CPP.ORDER_NONE) || '0';
@@ -87,37 +85,37 @@ CPP['math_single'] = function(block) {
   // wrapping the code.
   switch (operator) {
     case 'ABS':
-      code = arg + '.abs()';
+      code = 'abs(' + arg + ')';
       break;
     case 'ROOT':
-      code = 'Math.sqrt(' + arg + ')';
+      code = 'sqrt(' + arg + ')';
       break;
     case 'LN':
-      code = 'Math.log(' + arg + ')';
+      code = 'log(' + arg + ')';
       break;
     case 'EXP':
-      code = 'Math.exp(' + arg + ')';
+      code = 'exp(' + arg + ')';
       break;
     case 'POW10':
-      code = 'Math.pow(10,' + arg + ')';
+      code = 'pow(10, ' + arg + ')';
       break;
     case 'ROUND':
-      code = arg + '.round()';
+      code = 'round(' + arg + ')';
       break;
     case 'ROUNDUP':
-      code = arg + '.ceil()';
+      code = 'ceil(' + arg + ')';
       break;
     case 'ROUNDDOWN':
-      code = arg + '.floor()';
+      code = 'floor(' + arg + ')';
       break;
     case 'SIN':
-      code = 'Math.sin(' + arg + ' / 180 * Math.pi)';
+      code = 'sin(' + arg + ' / 180 * M_PI)';
       break;
     case 'COS':
-      code = 'Math.cos(' + arg + ' / 180 * Math.pi)';
+      code = 'cos(' + arg + ' / 180 * M_PI)';
       break;
     case 'TAN':
-      code = 'Math.tan(' + arg + ' / 180 * Math.pi)';
+      code = 'tan(' + arg + ' / 180 * M_PI)';
       break;
   }
   if (code) {
@@ -127,16 +125,16 @@ CPP['math_single'] = function(block) {
   // wrapping the code.
   switch (operator) {
     case 'LOG10':
-      code = 'Math.log(' + arg + ') / Math.log(10)';
+      code = 'log(' + arg + ') / log(10)';
       break;
     case 'ASIN':
-      code = 'Math.asin(' + arg + ') / Math.pi * 180';
+      code = 'asin(' + arg + ') / M_PI * 180';
       break;
     case 'ACOS':
-      code = 'Math.acos(' + arg + ') / Math.pi * 180';
+      code = 'acos(' + arg + ') / M_PI * 180';
       break;
     case 'ATAN':
-      code = 'Math.atan(' + arg + ') / Math.pi * 180';
+      code = 'atan(' + arg + ') / M_PI * 180';
       break;
     default:
       throw Error('Unknown math operator: ' + operator);
@@ -147,17 +145,14 @@ CPP['math_single'] = function(block) {
 CPP['math_constant'] = function(block) {
   // Constants: PI, E, the Golden Ratio, sqrt(2), 1/sqrt(2), INFINITY.
   const CONSTANTS = {
-    'PI': ['Math.pi', CPP.ORDER_UNARY_POSTFIX],
-    'E': ['Math.e', CPP.ORDER_UNARY_POSTFIX],
-    'GOLDEN_RATIO': ['(1 + Math.sqrt(5)) / 2', CPP.ORDER_MULTIPLICATIVE],
-    'SQRT2': ['Math.sqrt2', CPP.ORDER_UNARY_POSTFIX],
-    'SQRT1_2': ['Math.sqrt1_2', CPP.ORDER_UNARY_POSTFIX],
-    'INFINITY': ['double.infinity', CPP.ORDER_ATOMIC],
+    'PI': ['M_PI', CPP.ORDER_ATOMIC],
+    'E': ['M_E', CPP.ORDER_ATOMIC],
+    'GOLDEN_RATIO': ['(1 + sqrt(5)) / 2', CPP.ORDER_MULTIPLICATIVE],
+    'SQRT2': ['M_SQRT2', CPP.ORDER_ATOMIC],
+    'SQRT1_2': ['M_SQRT1_2', CPP.ORDER_ATOMIC],
+    'INFINITY': ['INFINITY', CPP.ORDER_ATOMIC],
   };
-  const constant = block.getFieldValue('CONSTANT');
-  if (constant !== 'INFINITY') {
-    CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
-  }
+  CPP.definitions_['include_cpp_cmath'] = '#include <cmath>';
   return CONSTANTS[constant];
 };
 
@@ -180,21 +175,20 @@ CPP['math_number_property'] = function(block) {
   let code;
   if (dropdownProperty === 'PRIME') {
     // Prime is a special case as it is not a one-liner test.
-    CPP.definitions_['import_dart_math'] =
-        'import \'dart:math\' as Math;';
+    CPP.definitions_['include_cpp_cmath'] = '#include <cmath>';
     const functionName = CPP.provideFunction_('math_isPrime', `
-bool ${CPP.FUNCTION_NAME_PLACEHOLDER_}(n) {
+bool ${CPP.FUNCTION_NAME_PLACEHOLDER_}(int n) {
   // https://en.wikipedia.org/wiki/Primality_test#Naive_methods
   if (n == 2 || n == 3) {
     return true;
   }
-  // False if n is null, negative, is 1, or not whole.
+  // False if n is negative, is 1, or not whole.
   // And false if n is divisible by 2 or 3.
-  if (n == null || n <= 1 || n % 1 != 0 || n % 2 == 0 || n % 3 == 0) {
+  if (n <= 1 || n % 1 != 0 || n % 2 == 0 || n % 3 == 0) {
     return false;
   }
   // Check all the numbers of form 6k +/- 1, up to sqrt(n).
-  for (var x = 6; x <= Math.sqrt(n) + 1; x += 6) {
+  for (int x = 6; x <= sqrt(n) + 1; x += 6) {
     if (n % (x - 1) == 0 || n % (x + 1) == 0) {
       return false;
     }
@@ -238,148 +232,57 @@ CPP['math_on_list'] = function(block) {
   let code;
   switch (func) {
     case 'SUM': {
+      CPP.definitions_['include_cpp_numeric'] = '#include <numeric>';
       const functionName = CPP.provideFunction_('math_sum', `
-num ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List<num> myList) {
-  num sumVal = 0;
-  myList.forEach((num entry) {sumVal += entry;});
-  return sumVal;
+int ${CPP.FUNCTION_NAME_PLACEHOLDER_}(list<int> myList) {
+  return accumulate(begin(myList), end(myList), 0);
 }
 `);
       code = functionName + '(' + list + ')';
       break;
     }
     case 'MIN': {
-      CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
       const functionName = CPP.provideFunction_('math_min', `
-num ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List<num> myList) {
-  if (myList.isEmpty) return null;
-  num minVal = myList[0];
-  myList.forEach((num entry) {minVal = Math.min(minVal, entry);});
-  return minVal;
+int ${CPP.FUNCTION_NAME_PLACEHOLDER_}(list<int> mylist) {
+  int min=0;
+  for (list<double>::iterator it=mylist.begin(); it != mylist.end(); ++it){
+    if (min >= *it)
+      min = *it;
+  }
+  return min;
 }
 `);
       code = functionName + '(' + list + ')';
       break;
     }
     case 'MAX': {
-      CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
       const functionName = CPP.provideFunction_('math_max', `
-num ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List<num> myList) {
-  if (myList.isEmpty) return null;
-  num maxVal = myList[0];
-  myList.forEach((num entry) {maxVal = Math.max(maxVal, entry);});
-  return maxVal;
+int ${CPP.FUNCTION_NAME_PLACEHOLDER_}(list<int> mylist) {
+  int max=0;
+  for (list<double>::iterator it=mylist.begin(); it != mylist.end(); ++it){
+    if (max <= *it)
+      max = *it;
+  }
+  return max;
 }
 `);
       code = functionName + '(' + list + ')';
       break;
     }
     case 'AVERAGE': {
-      // This operation exclude null and values that are not int or float:
-      //   math_mean([null,null,"aString",1,9]) -> 5.0
+      CPP.definitions_['include_cpp_numeric'] = '#include <numeric>';
       const functionName = CPP.provideFunction_('math_mean', `
-num ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List myList) {
-  // First filter list for numbers only.
-  List localList = new List.from(myList);
-  localList.removeWhere((a) => a is! num);
-  if (localList.isEmpty) return null;
-  num sumVal = 0;
-  localList.forEach((var entry) {sumVal += entry;});
-  return sumVal / localList.length;
+int ${CPP.FUNCTION_NAME_PLACEHOLDER_}(list<int> myList) {
+  return accumulate(begin(myList), end(myList), 0) / myList.size();
 }
 `);
       code = functionName + '(' + list + ')';
       break;
     }
-    case 'MEDIAN': {
-      const functionName = CPP.provideFunction_('math_median', `
-num ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List myList) {
-  // First filter list for numbers only, then sort, then return middle value
-  // or the average of two middle values if list has an even number of elements.
-  List localList = new List.from(myList);
-  localList.removeWhere((a) => a is! num);
-  if (localList.isEmpty) return null;
-  localList.sort((a, b) => (a - b));
-  int index = localList.length ~/ 2;
-  if (localList.length % 2 == 1) {
-    return localList[index];
-  } else {
-    return (localList[index - 1] + localList[index]) / 2;
-  }
-}
-`);
-      code = functionName + '(' + list + ')';
-      break;
-    }
-    case 'MODE': {
-      CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
-      // As a list of numbers can contain more than one mode,
-      // the returned result is provided as an array.
-      // Mode of [3, 'x', 'x', 1, 1, 2, '3'] -> ['x', 1]
-      const functionName = CPP.provideFunction_('math_modes', `
-List ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List values) {
-  List modes = [];
-  List counts = [];
-  int maxCount = 0;
-  for (int i = 0; i < values.length; i++) {
-    var value = values[i];
-    bool found = false;
-    int thisCount;
-    for (int j = 0; j < counts.length; j++) {
-      if (counts[j][0] == value) {
-        thisCount = ++counts[j][1];
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      counts.add([value, 1]);
-      thisCount = 1;
-    }
-    maxCount = Math.max(thisCount, maxCount);
-  }
-  for (int j = 0; j < counts.length; j++) {
-    if (counts[j][1] == maxCount) {
-        modes.add(counts[j][0]);
-    }
-  }
-  return modes;
-}
-`);
-      code = functionName + '(' + list + ')';
-      break;
-    }
-    case 'STD_DEV': {
-      CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
-      const functionName = CPP.provideFunction_('math_standard_deviation', `
-num ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List myList) {
-  // First filter list for numbers only.
-  List numbers = new List.from(myList);
-  numbers.removeWhere((a) => a is! num);
-  if (numbers.isEmpty) return null;
-  num n = numbers.length;
-  num sum = 0;
-  numbers.forEach((x) => sum += x);
-  num mean = sum / n;
-  num sumSquare = 0;
-  numbers.forEach((x) => sumSquare += Math.pow(x - mean, 2));
-  return Math.sqrt(sumSquare / n);
-}
-`);
-      code = functionName + '(' + list + ')';
-      break;
-    }
-    case 'RANDOM': {
-      CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
-      const functionName = CPP.provideFunction_('math_random_item', `
-dynamic ${CPP.FUNCTION_NAME_PLACEHOLDER_}(List myList) {
-  int x = new Math.Random().nextInt(myList.length);
-  return myList[x];
-}
-`);
-      code = functionName + '(' + list + ')';
-      break;
-    }
+    case 'MEDIAN':
+    case 'MODE':
+    case 'STD_DEV':
+    case 'RANDOM':
     default:
       throw Error('Unknown operator: ' + func);
   }
@@ -398,30 +301,31 @@ CPP['math_modulo'] = function(block) {
 
 CPP['math_constrain'] = function(block) {
   // Constrain a number between two limits.
-  CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
+  CPP.definitions_['include_cpp_algorithm'] = '#include <algorithm>';
+  CPP.definitions_['include_cpp_cmath'] = '#include <cmath>';
   const argument0 = CPP.valueToCode(block, 'VALUE', CPP.ORDER_NONE) || '0';
   const argument1 = CPP.valueToCode(block, 'LOW', CPP.ORDER_NONE) || '0';
   const argument2 =
-      CPP.valueToCode(block, 'HIGH', CPP.ORDER_NONE) || 'double.infinity';
-  const code = 'Math.min(Math.max(' + argument0 + ', ' + argument1 + '), ' +
+      CPP.valueToCode(block, 'HIGH', CPP.ORDER_NONE) || 'INFINITY';
+  const code = 'min(max(' + argument0 + ', ' + argument1 + '), ' +
       argument2 + ')';
   return [code, CPP.ORDER_UNARY_POSTFIX];
 };
 
 CPP['math_random_int'] = function(block) {
   // Random integer between [X] and [Y].
-  CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
+  CPP.definitions_['include_cpp_cstdlib'] = '#include <cstdlib>';
   const argument0 = CPP.valueToCode(block, 'FROM', CPP.ORDER_NONE) || '0';
   const argument1 = CPP.valueToCode(block, 'TO', CPP.ORDER_NONE) || '0';
   const functionName = CPP.provideFunction_('math_random_int', `
-int ${CPP.FUNCTION_NAME_PLACEHOLDER_}(num a, num b) {
+int ${CPP.FUNCTION_NAME_PLACEHOLDER_}(int a, int b) {
   if (a > b) {
     // Swap a and b to ensure a is smaller.
-    num c = a;
+    int c = a;
     a = b;
     b = c;
   }
-  return new Math.Random().nextInt(b - a + 1) + a;
+  return a + rand() % (b-a+1);
 }
 `);
   const code = functionName + '(' + argument0 + ', ' + argument1 + ')';
@@ -430,17 +334,17 @@ int ${CPP.FUNCTION_NAME_PLACEHOLDER_}(num a, num b) {
 
 CPP['math_random_float'] = function(block) {
   // Random fraction between 0 and 1.
-  CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
-  return ['new Math.Random().nextDouble()', CPP.ORDER_UNARY_POSTFIX];
+  CPP.definitions_['include_cpp_cstdlib'] = '#include <cstdlib>';
+  return ['rand() % 100 / 100.0', CPP.ORDER_MULTIPLICATIVE];
 };
 
 CPP['math_atan2'] = function(block) {
   // Arctangent of point (X, Y) in degrees from -180 to 180.
-  CPP.definitions_['import_dart_math'] = 'import \'dart:math\' as Math;';
+  CPP.definitions_['include_cpp_cmath'] = '#include <cmath>';
   const argument0 = CPP.valueToCode(block, 'X', CPP.ORDER_NONE) || '0';
   const argument1 = CPP.valueToCode(block, 'Y', CPP.ORDER_NONE) || '0';
   return [
-    'Math.atan2(' + argument1 + ', ' + argument0 + ') / Math.pi * 180',
+    'atan2(' + argument1 + ', ' + argument0 + ') / M_PI * 180',
     CPP.ORDER_MULTIPLICATIVE
   ];
 };

@@ -33,7 +33,7 @@ CPP['controls_repeat_ext'] = function(block) {
   let endVar = repeats;
   if (!repeats.match(/^\w+$/) && !stringUtils.isNumber(repeats)) {
     endVar = CPP.nameDB_.getDistinctName('repeat_end', NameType.VARIABLE);
-    code += 'var ' + endVar + ' = ' + repeats + ';\n';
+    code += 'int ' + endVar + ' = ' + repeats + ';\n';
   }
   code += 'for (int ' + loopVar + ' = 0; ' + loopVar + ' < ' + endVar + '; ' +
       loopVar + '++) {\n' + branch + '}\n';
@@ -72,7 +72,7 @@ CPP['controls_for'] = function(block) {
       stringUtils.isNumber(increment)) {
     // All arguments are simple numbers.
     const up = Number(argument0) <= Number(argument1);
-    code = 'for (' + variable0 + ' = ' + argument0 + '; ' + variable0 +
+    code = 'for (int ' + variable0 + ' = ' + argument0 + '; ' + variable0 +
         (up ? ' <= ' : ' >= ') + argument1 + '; ' + variable0;
     const step = Math.abs(Number(increment));
     if (step === 1) {
@@ -88,13 +88,13 @@ CPP['controls_for'] = function(block) {
     if (!argument0.match(/^\w+$/) && !stringUtils.isNumber(argument0)) {
       startVar =
           CPP.nameDB_.getDistinctName(variable0 + '_start', NameType.VARIABLE);
-      code += 'var ' + startVar + ' = ' + argument0 + ';\n';
+      code += 'int ' + startVar + ' = ' + argument0 + ';\n';
     }
     let endVar = argument1;
     if (!argument1.match(/^\w+$/) && !stringUtils.isNumber(argument1)) {
       endVar =
           CPP.nameDB_.getDistinctName(variable0 + '_end', NameType.VARIABLE);
-      code += 'var ' + endVar + ' = ' + argument1 + ';\n';
+      code += 'int ' + endVar + ' = ' + argument1 + ';\n';
     }
     // Determine loop direction at start, in case one of the bounds
     // changes during loop execution.
@@ -109,7 +109,7 @@ CPP['controls_for'] = function(block) {
     code += 'if (' + startVar + ' > ' + endVar + ') {\n';
     code += CPP.INDENT + incVar + ' = -' + incVar + ';\n';
     code += '}\n';
-    code += 'for (' + variable0 + ' = ' + startVar + '; ' + incVar +
+    code += 'for (int ' + variable0 + ' = ' + startVar + '; ' + incVar +
         ' >= 0 ? ' + variable0 + ' <= ' + endVar + ' : ' + variable0 +
         ' >= ' + endVar + '; ' + variable0 + ' += ' + incVar + ') {\n' +
         branch + '}\n';
@@ -126,7 +126,7 @@ CPP['controls_forEach'] = function(block) {
   let branch = CPP.statementToCode(block, 'DO');
   branch = CPP.addLoopTrap(branch, block);
   const code =
-      'for (var ' + variable0 + ' in ' + argument0 + ') {\n' + branch + '}\n';
+      'for (int ' + variable0 + ' : ' + argument0 + ') {\n' + branch + '}\n';
   return code;
 };
 

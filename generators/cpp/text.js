@@ -35,11 +35,11 @@ CPP['text_join'] = function(block) {
   // Create a string made up of any number of elements of any type.
   switch (block.itemCount_) {
     case 0:
-      return ["''", CPP.ORDER_ATOMIC];
+      return ['""', CPP.ORDER_ATOMIC];
     case 1: {
       const element =
-          CPP.valueToCode(block, 'ADD0', CPP.ORDER_UNARY_POSTFIX) || "''";
-      const code = element + '.toString()';
+          CPP.valueToCode(block, 'ADD0', CPP.ORDER_NONE) || '""';
+      const code = 'to_string(' + element + ')';
       return [code, CPP.ORDER_UNARY_POSTFIX];
     }
     default: {
@@ -48,7 +48,18 @@ CPP['text_join'] = function(block) {
         elements[i] =
             CPP.valueToCode(block, 'ADD' + i, CPP.ORDER_NONE) || "''";
       }
-      const code = '[' + elements.join(',') + '].join()';
+      CPP.definitions_['include_cpp_string'] = '#include <string>';
+      CPP.definitions_['include_cpp_vector'] = '#include <vector>';
+      const functionName = CPP.provideFunction_('string_join', `
+    string ${CPP.FUNCTION_NAME_PLACEHOLDER_}(vector<string>& ss) {
+      string r;
+      for (int i=0; i<ss.size(); i++) {
+      	r.append(ss[i]);
+      }
+      return r;
+    }
+    `);
+      const code = functionName + '([' + elements.join(',') + '])';
       return [code, CPP.ORDER_UNARY_POSTFIX];
     }
   }
@@ -59,23 +70,24 @@ CPP['text_append'] = function(block) {
   const varName =
       CPP.nameDB_.getName(block.getFieldValue('VAR'), NameType.VARIABLE);
   const value = CPP.valueToCode(block, 'TEXT', CPP.ORDER_NONE) || "''";
-  return varName + ' = [' + varName + ', ' + value + '].join();\n';
+  return varName + ' = ' + varName + value + ';\n';
 };
 
 CPP['text_length'] = function(block) {
   // String or array length.
   const text =
       CPP.valueToCode(block, 'VALUE', CPP.ORDER_UNARY_POSTFIX) || "''";
-  return [text + '.length', CPP.ORDER_UNARY_POSTFIX];
+  return [text + '.size()', CPP.ORDER_UNARY_POSTFIX];
 };
 
 CPP['text_isEmpty'] = function(block) {
   // Is the string null or array empty?
   const text =
       CPP.valueToCode(block, 'VALUE', CPP.ORDER_UNARY_POSTFIX) || "''";
-  return [text + '.isEmpty', CPP.ORDER_UNARY_POSTFIX];
+  return [text + '.size()', CPP.ORDER_UNARY_POSTFIX];
 };
 
+// TODO here
 CPP['text_indexOf'] = function(block) {
   // Search the text for a substring.
   const operator =

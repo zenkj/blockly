@@ -47,7 +47,7 @@ CPP.addReservedWords(
     'template,this,thread_local,throw,true,try,typedef,typeid,typename,union,' +
     'unsigned,using,virtual,void,volatile,wchar_t,while,xor,xor_eq,' +
     // standard library
-    'cin,cout,printf,malloc,free,string,std'
+    'cin,cout,printf,malloc,free,string,std,NULL'
 );
 
 /**
@@ -173,7 +173,6 @@ CPP.quote_ = function(string) {
   // Can't use goog.string.quote since $ must also be escaped.
   string = string.replace(/\\/g, '\\\\')
                  .replace(/\n/g, '\\\n')
-                 .replace(/\$/g, '\\$')
                  .replace(/"/g, '\\\"');
   return '"' + string + '"';
 };
@@ -210,12 +209,7 @@ CPP.scrub_ = function(block, code, opt_thisOnly) {
     let comment = block.getCommentText();
     if (comment) {
       comment = stringUtils.wrap(comment, this.COMMENT_WRAP - 3);
-      if (block.getProcedureDef) {
-        // Use documentation comment for function comments.
-        commentCode += this.prefixLines(comment + '\n', '/// ');
-      } else {
-        commentCode += this.prefixLines(comment + '\n', '// ');
-      }
+      commentCode += this.prefixLines(comment + '\n', '// ');
     }
     // Collect comments for all value arguments.
     // Don't collect comments for nested statements.
